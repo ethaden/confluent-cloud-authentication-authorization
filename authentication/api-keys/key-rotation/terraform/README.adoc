@@ -1,0 +1,46 @@
+= Demo for setting up a Confluent Cloud environment with a standard cluster with Terraform
+
+This demonstrates how to set up a Confluent Cloud environment with a standard cluster and several resources including schema registry, topics, service accounts with role bindings, role-bindings for existing users, etc.
+
+DISCLAIMER: This project is for demonstration purposes only. Using the demo unmodified in production is highly discouraged. Use at your own risk.
+
+== Precondition
+
+You need the following to run this demo:
+
+* A Confluent Cloud Organization.
+* A Confluent Cloud API Key with sufficient access permissions to set up a service account and organizational API keys.
+
+== Getting started
+
+DISCLAIMER: The shown approach for using Terraform is just an example for demonstrating some capabilities of Terraform and does not in any way represent a recommendation by Confluent how this should be done in general, particularly not in production systems.
+
+First, you need to customize your terraform variables. Copy `terraform.tfvars.template` to `terraform.tfvars` and specify all missing values. Note that your specific config files has been added to .gitignore for security reasons (thus it won't be commited).
+
+Then you need to initialize terraform (only once):
+
+```shell
+terraform init
+```
+
+Create all the resources. You might get an error message stating that you need to provide access credentials via environment variables. Alternatively, you can drop the `api-key.txt` file created for you or a service account in the terraform folder (make sure you never commit this to git). In any case your prinicpial needs OrganizationAdmin permissions.
+
+```shell
+terraform apply
+```
+
+Confirm the question if you really want to setup the resources.
+
+== Using the setup
+
+When running the code, a service account is created with two API keys. For the first one, we start the rotation cylce directly from time instance "0" (i.e. "now"). For the second API key, we set the creation date of the time rotation resource slightly to the future. For this we add the desired lifetime to the timestamp "now" and subtract the (shorter!) overlap time. Thus, when rotating keys we will always recreate the older one first. Then both keys are valid for a the given amount of time. Then the older key will be replaced.
+
+This design will make sure that each client always has enough time to switch from the previous key to the new key (i.e. within the overlap time) before the older key is replaced, too.
+
+== Wrapping things up
+
+You can destroy all created resources including the cluster in Confluent Cloud by running the following command:
+
+```shell
+terraform destroy
+```
