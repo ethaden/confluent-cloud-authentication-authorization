@@ -1,4 +1,4 @@
-= = Demo for configuring Confluent Cloud resources with Automation Tools such as Terraform
+= Demo for configuring Confluent Cloud resources with Automation Tools such as Terraform
 
 DISCLAIMER: This project is for demonstration purposes only. Using the demo unmodified in production is highly discouraged. Use at your own risk.
 
