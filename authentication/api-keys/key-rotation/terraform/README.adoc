@@ -1,6 +1,6 @@
-= Demo for setting up a Confluent Cloud environment with a standard cluster with Terraform
+= Demo for how to rotate API keys in Confluent Cloud with Terraform
 
-This demonstrates how to set up a Confluent Cloud environment with a standard cluster and several resources including schema registry, topics, service accounts with role bindings, role-bindings for existing users, etc.
+This demonstrates how to set up a Confluent Cloud environment with Terraform.
 
 DISCLAIMER: This project is for demonstration purposes only. Using the demo unmodified in production is highly discouraged. Use at your own risk.
 

@@ -1,0 +1,5 @@
+= = Demo for configuring Confluent Cloud resources with Automation Tools such as Terraform
+
+DISCLAIMER: This project is for demonstration purposes only. Using the demo unmodified in production is highly discouraged. Use at your own risk.
+
+This repository demonstrates many smaller features of Confluent Platform. Please have a look at the sub folder(s) for more details.
