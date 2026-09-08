@@ -42,7 +42,7 @@ api_keys_list = config.require_object("apiKeys")
 # Capture the absolute current execution timestamp in UTC
 now = datetime.datetime.now(datetime.timezone.utc)
 # For testing
-#now = datetime.datetime.fromisoformat("2027-03-07T14:33:00Z")
+#now = datetime.datetime.fromisoformat("2027-03-09T14:33:00Z")
 
 # ------------------------------------------------------------------------------
 # 2. Dynamic Argument Construction Mapping Helper
@@ -64,6 +64,8 @@ def build_managed_resource_args(scope: str, env_id: str = None, target_id: str =
             kind="Tableflow"
         )
     elif scope == "KAFKA":
+        if env_id is None:
+            raise ValueError(f"Environment ID is required when setting up '{scope}'")
         return confluentcloud.ApiKeyManagedResourceArgs(
             id=target_id,
             api_version="cmk/v2",
@@ -71,6 +73,8 @@ def build_managed_resource_args(scope: str, env_id: str = None, target_id: str =
             environment=confluentcloud.ApiKeyManagedResourceEnvironmentArgs(id=env_id)
         )
     elif scope == "SCHEMA_REGISTRY":
+        if env_id is None:
+            raise ValueError(f"Environment ID is required when setting up '{scope}'")
         return confluentcloud.ApiKeyManagedResourceArgs(
             id=target_id,
             api_version="srcm/v2",
@@ -78,6 +82,8 @@ def build_managed_resource_args(scope: str, env_id: str = None, target_id: str =
             environment=confluentcloud.ApiKeyManagedResourceEnvironmentArgs(id=env_id)
         )
     elif scope == "FLINK":
+        if env_id is None:
+            raise ValueError(f"Environment ID is required when setting up '{scope}'")
         return confluentcloud.ApiKeyManagedResourceArgs(
             id=target_id,
             api_version="fcpm/v2",
@@ -85,6 +91,8 @@ def build_managed_resource_args(scope: str, env_id: str = None, target_id: str =
             environment=confluentcloud.ApiKeyManagedResourceEnvironmentArgs(id=env_id)
         )
     elif scope == "KSQLDB":
+        if env_id is None:
+            raise ValueError(f"Environment ID is required when setting up '{scope}'")
         return confluentcloud.ApiKeyManagedResourceArgs(
             id=target_id,
             api_version="ksqldbcm/v2",
