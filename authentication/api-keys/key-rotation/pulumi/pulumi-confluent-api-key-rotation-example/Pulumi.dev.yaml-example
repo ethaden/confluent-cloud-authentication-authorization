@@ -1,0 +1,71 @@
+# In order to use this example, please copy it to "Pulumi.dev.yaml", then initialize the secrets using the pulumi command line:
+# In all cases: Choose an encryption password an initialize an environment variable with it. Make sure to store this "master" password securely.
+# $ export PULUMI_CONFIG_PASSPHRASE="your-highly-secure-master-passphrase"
+# When using AUTH Scenario 1:
+# When using AUTH Scenario 2:
+# - Add the apiKey directly in the file
+# - Run the following to encrypt and add the api secret
+#.  $  
+# Dummy value, will be overwritten
+encryptionsalt: DUMMY_VALUE
+config:
+  # ----------------------------------------------------------------------------
+  # AUTHENTICATION MATRIX (UNCOMMENT ONE SCENARIO BLOCK BELOW)
+  # ----------------------------------------------------------------------------
+  # --- AUTH SCENARIO 1: Standard Admin API Key + Secret via environment variables ---
+  # Just set environment variables CONFLUENT_CLOUD_API_KEY and $CONFLUENT_CLOUD_API_SECRET accordingly before you run pulumi.
+  # --- AUTH SCENARIO 2: Standard Admin API Key + Secret as part of this config file ---
+  # The native provider looks for 'apiKey' and 'apiSecret' under this namespace.
+  # Add the api key manually in the next line and save this file.
+  #confluentcloud:apiKey: "YOUR_CONFLUENT_CLOUD_API_KEY"
+  # Add the api secret in encrypted form by running:
+  # $ pulumi config set confluentcloud:apiSecret "YOUR_CONFLUENT_CLOUD_API_SECRET" --secret
+  #confluentcloud:apiSecret:
+  #  secure: DUMMY_VALUE # Encrypted via CLI, will be replaced by running the command above
+  # --- AUTH SCENARIO 3: Microsoft Entra ID OIDC / OAuth Flow ---
+  # The native provider executes a machine-to-machine exchange when 'oauth' is present.
+  # $ pulumi config set confluentcloud:apiSecret "YOUR_CLIENT_SECRET" --secret
+#  confluentcloud:oauth:
+#    clientId: "00000000-0000-0000-0000-000000000000"
+#    identityPoolId: "pool-abc123xyz"
+#    tokenEndpoint: "https://microsoftonline.com/...."
+#    externalTokenScope: "https://confluent.cloud/...."
+#    clientSecret:
+#      secure: DUMMY_VALUE # Encrypted via CLI, will be replaced by running the command above
+  # Define multiple keys. The code will process each item independently.
+  confluent-key-rotation:apiKeys:
+    - name: "global-admin"
+      scope: "GLOBAL"
+      validityDays: 180
+      overlapDays: 7
+      epochStartDate: "2026-09-07T14:33:00Z"
+      confluentEnvironmentId: "env-staging999"
+      ownerId: "u-staging-sa"
+      # OwnerKind: Either "ServiceAccount" or "User"
+      ownerKind: "ServiceAccount"
+    - name: "orders-pipeline"
+      scope: "KAFKA"
+      targetResourceId: "lkc-orders123"
+      validityDays: 90 # Shorter lifespan for compliance
+      overlapDays: 5
+      epochStartDate: "2026-09-07T14:33:00Z"
+      confluentEnvironmentId: "env-staging999"
+      ownerId: "u-staging-sa"
+      ownerKind: "ServiceAccount"
+    - name: "analytics-db"
+      scope: "FLINK"
+      targetResourceId: "lfcp-analytics789"
+      validityDays: 180
+      overlapDays: 14 # Longer buffer for fallback testing
+      epochStartDate: "2026-09-07T14:33:00Z"
+      confluentEnvironmentId: "env-staging999"
+      ownerId: "u-staging-sa"
+      ownerKind: "ServiceAccount"
+    - name: "schema-registry-sync"
+      scope: "SCHEMA_REGISTRY"
+      targetResourceId: "lsrc-governance456"
+      epochStartDate: "2026-09-07T14:33:00Z"
+      confluentEnvironmentId: "env-staging999"
+      ownerId: "u-staging-sa"
+      ownerKind: "ServiceAccount"
+      # Omitted validityDays / overlapDays will automatically use system defaults (180 / 7)

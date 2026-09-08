@@ -1,0 +1,3 @@
+pulumi>=3.261.0,<4.0.0
+pulumi-confluentcloud>=2.81.0,<3.0.0
+pulumiverse_time>=0.1.1,<1.0.0

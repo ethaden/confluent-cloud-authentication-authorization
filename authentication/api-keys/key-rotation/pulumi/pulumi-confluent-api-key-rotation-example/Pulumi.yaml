@@ -1,0 +1,3 @@
+name: confluent-key-rotation
+runtime: python
+description: Automated zero-downtime API key rotation for Confluent Cloud.

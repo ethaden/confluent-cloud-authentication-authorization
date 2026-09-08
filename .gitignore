@@ -3,3 +3,6 @@ generated
 *.hcl
 terraform.tfvars
 aws-remote-tfstate-s3.tf
+Pulumi.dev.yaml
+__pycache__/
+venv

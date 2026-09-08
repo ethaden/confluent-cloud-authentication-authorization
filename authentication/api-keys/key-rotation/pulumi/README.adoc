@@ -1,0 +1,93 @@
+= Example for implementing API Key Rotation for Confluent Cloud with Pulumi
+
+This demo project shows how the rotation of API keys can be implemented for Confluent Cloud using Pulumi. There are always pairs of API keys: One is the current primary key which is always active. A secondary key is deployed a configurable time before the primary key is decomissioned and replaced by the secondary key (which becomes the new primary key). The overlap time when both keys are active allows clients to pick up the new key from e.g. a key vault.
+
+DISCLAIMER AND WARNING: You use this code at your own risk! Please do not use it for production systems! Neither the author nor IBM may not be held responsible for any harm caused by this code!
+
+
+== Preparation
+
+== Create your configuration file
+
+Copy `Pulumi.dev.yaml-example` to `Pulumi.dev.yaml` and customize it to your needs.
+
+=== Set up Python
+
+Go to the folder containing the `__main__.py``. 
+Run these commands to initialize a virtual environment and enable it.
+
+```console
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+=== Configure Authentication
+
+==== Example Configuration 1: Manage Confluent Cloud with an existing `management` API Key
+
+The following example assumes that you have two environment variables on the machine where you run pulumi: `CONFLUENT_CLOUD_API_KEY` and `CONFLUENT_CLOUD_API_SECRET`
+
+==== Example Configuration 2: Manage Confluent Cloud with an existing `management` API Key hard-coded into the configuration (not recommended)
+
+Instead, you can also hard-code the API key into the configuration file. Just comment other authentication options (e.g. oidc) and uncomment the variable definition for the API key and API secret. Customize the values as necessary.
+
+==== Example Configuration 3: Manage Confluent Cloud using OIDC
+
+You can also use OIDC instead (please update all fields accordingly):
+
+Comment the othor authentication options in `Pulumi.dev.yaml` and uncomment the lines related to OIDC. Customize them as necessary.
+
+=== Setting up the example project
+
+As this example creates credentials (API keys), we need to define an encryption key for Pulumi. Please change the value accordingly.
+
+```console
+export PULUMI_CONFIG_PASSPHRASE="your-secure-passphrase"
+```
+
+```console
+pulumi login file://~
+```
+
+In the `pulumi-confluent-api-key-rotation-example` folder, run this:
+
+```console
+pulumi stack init dev
+```
+
+If you want to use environment variables for providing the API key for accessing Confluent Cloud:
+
+```console
+export CONFLUENT_CLOUD_API_KEY="your-admin-key"
+export CONFLUENT_CLOUD_API_SECRET="your-admin-secret"
+```
+
+
+=== Running the example project
+
+Optionally, preview first:
+
+```console
+pulumi preview
+```
+
+Then run it
+
+```console
+pulumi up --yes
+```
+
+For testing, the code includes the option to update the "now" variable to a value of your choice.
+
+Remove the resources again by running:
+
+```console
+pulumi down
+```
+
+=== Expected behavior
+
+Depending on your configuration, a number of API keys is deployed. For each of them, you can specify a few properties. One is the start of the epoche. That's the very first point in time when you start the rotation for that key. Right before it expires, more specifically just on the expiry date minus the overlap time, a secondardy key is deployed. Both are active during the overlap period. After that, the secondary key becomes the primary key. The previous primary key is deleted. The rotation cycle starts again.
+
