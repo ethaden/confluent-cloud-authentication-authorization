@@ -1,0 +1,22 @@
+[project]
+name = "confluent-cloud-api-examples"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Eike Thaden", email = "ethaden@confluent.io" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "azure-identity>=1.25.3",
+    "msal>=1.39.0",
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+]
+
+#[project.scripts]
+#confluent-cloud-api-examples = "confluent_cloud_api_examples:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

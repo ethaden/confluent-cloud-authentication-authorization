@@ -6,3 +6,6 @@ aws-remote-tfstate-s3.tf
 Pulumi.dev.yaml
 __pycache__/
 venv
+config.yaml
+.devcontainer/devcontainer-lock.json
+uv.lock

@@ -1,0 +1,24 @@
+#debug_azure_authentication: True
+# Managed identities are only useful when the code runs on Azure.
+# Disabling them can speed up the login procedure on machines not running on Azure, e.g. developer machines
+#exclude_managed_identity_credential: True
+# You can read values from environment variables by using "${env:NAME_OF_THE_ENVIRONMENT_VARIABLE}"
+auth: 
+  # Use either "azure" or "basicauth". Configure the selected method properly.
+  #selected: azure
+  selected: basicauth
+  azure:
+    app_id: XXXXX-YYYY-AAA-BBBB-CCCCCCCCCCCC
+    pool_id: pool-ABCD
+    #logging_enabled: false # Default: false
+    #min_token_validity: 30 # Default: 30
+  basicauth:
+    global:
+      key: ${env:CONFLUENT_CLOUD_API_KEY}
+      secret: ${env:CONFLUENT_CLOUD_API_SECRET}
+kafka:
+  client_id: example
+  consumer_group_id: example
+  cluster_id: lkc-123456
+  env_id: t1234556
+  topic: test
