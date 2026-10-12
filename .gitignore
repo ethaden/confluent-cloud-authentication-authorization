@@ -9,3 +9,4 @@ venv
 config.yaml
 .devcontainer/devcontainer-lock.json
 uv.lock
+.env

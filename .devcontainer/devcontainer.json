@@ -4,6 +4,8 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  // Create and customize your environment in .env in the main folder, see .env-example for reference
+  "runArgs": ["--env-file", "${localWorkspaceFolder}/.env"],
   // No workspaceMount/workspaceFolder: by default the project folder is mounted to
   // /workspaces/confluent-cloud-metrics-prometheus and opened in VS Code
   "features": {
@@ -34,7 +36,12 @@
     "GIT_CONFIG_COUNT": "1",
     "GIT_CONFIG_KEY_0": "protocol.ssh.allow",
     "GIT_CONFIG_VALUE_0": "always",
-    "SSH_AUTH_SOCK": "/root/.ssh/auth_sock"
+    "SSH_AUTH_SOCK": "/root/.ssh/auth_sock",
+    "CONFLUENT_CLOUD_API_KEY": "${localEnv:CONFLUENT_CLOUD_API_KEY}",
+    "CONFLUENT_CLOUD_API_SECRET": "${localEnv:CONFLUENT_CLOUD_API_SECRET}",
+    // Set the following in .env in the main folder, not here:
+    //"GIT_AUTHOR_NAME": "${localEnv:GIT_AUTHOR_NAME}",
+    //"GIT_AUTHOR_EMAIL": "${localEnv:GIT_AUTHOR_EMAIL}"
     // Forwards the temporary variables created by the initializeCommand below
     // "GIT_AUTHOR_NAME": "${localEnv:HOST_GIT_NAME}",
     // "GIT_AUTHOR_EMAIL": "${localEnv:HOST_GIT_EMAIL}",

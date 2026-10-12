@@ -1,20 +1,12 @@
 # Pin the Debian release so it matches a release supported by Docker's apt repository
 FROM python:3.14-slim
 
-# Install git and required system tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    openssh-client \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 ENV DEBIAN_FRONTEND=noninteractive
 # Install the Docker CLI and compose plugin from Docker's official repository
 # (no engine: the CLI uses Docker Desktop on the host via the mounted socket)
 RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get update && apt-get install -y --no-install-recommends \
-    apt-transport-https ca-certificates curl gnupg lsb-release \
+        apt-transport-https ca-certificates curl gnupg lsb-release git git-extras openssh-client curl \
     && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
     && chmod a+r /etc/apt/keyrings/docker.asc \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
@@ -27,7 +19,7 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     #&& AZ_DIST=$(lsb_release -cs) \
     && AZ_DIST=bookworm \
     && echo "Types: deb\nURIs: https://packages.microsoft.com/repos/azure-cli/\nSuites: ${AZ_DIST}\nComponents: main\nArchitectures: $(dpkg --print-architecture)\nSigned-By: /etc/apt/keyrings/microsoft.gpg" | tee /etc/apt/sources.list.d/azure-cli.sources \
-    # 3. Update apt and install the azure-cli package
+    # 3. Update apt and install the additional packages
     && apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin azure-cli \
     && apt-get clean \
