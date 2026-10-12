@@ -10,8 +10,8 @@ from confluent_kafka import Producer, SerializingProducer
 from confluent_kafka.serialization import StringSerializer
 import socket
 
-from ccloud_util import read_config_file
-from ccloud_auth_provider_azure import CCloud_Auth_Provider_Azure, AuthenticationError
+from ccloud_config import CCloud_Config
+from ccloud_auth_provider_azure import AuthenticationError
 from ccloud_auth_provider_base import CCloud_Auth_Provider_Base
 
 # Acquire an Azure access token from the specified App Registration and the given scope configured in there
@@ -73,44 +73,41 @@ class CCloud_Azure_Producer:
         print('User record {} successfully produced to {} [{}] at offset {}'.format(
             msg.key(), msg.topic(), msg.partition(), msg.offset()))
 
-if __name__=='__main__':
+if __name__ == '__main__':
     if sys.version_info >= (3, 9):
-        parser = argparse.ArgumentParser(prog='ccloud_list_environments',
-            exit_on_error=False) # type: ignore  # pragma: no cover
+        parser = argparse.ArgumentParser(
+            prog='ccloud_produce_to_topic',
+            exit_on_error=True,
+        )  # type: ignore  # pragma: no cover
     else:
-        parser = argparse.ArgumentParser(prog='ccloud_list_environments') # type: ignore  # pragma: no cover
-    parser.add_argument('--app-id', '-a', help='The Id of the Azure App Registration configured in the Confluent Cloud Identity Pool', default=None)
-    parser.add_argument('--pool-id', '-p', help='The Id of the Identity Pool configured in Confluent Cloud', default=None)
-    parser.add_argument('--env-id', '-e', help='The environment Id')
-    parser.add_argument('--cluster-id', '-k', help='The cluster Id')
-    parser.add_argument('--topic', '-t', help='The topic name')
-    parser.add_argument('--client-id', '-i', help='The client ID (if not specified, te hostname is used)')
-    parser.add_argument('--exclude-managed-identity-credential', '-m', help='Disables using the managed identity in Azure authentication which might speed up the login on developer machines. Default: False', action='store_true')
-    parser.add_argument('--debug-azure-authentication', '-d', help='Log debug output from Azure authentication. Default: False', action='store_true')
-    parser.add_argument('--config', '-c', help='A config file', default=None)
-    parsed_args = parser.parse_args()
-    config_file_name = parsed_args.config
-    app_id = parsed_args.app_id
-    pool_id = parsed_args.pool_id
-    env_id = parsed_args.env_id
-    cluster_id = parsed_args.cluster_id
-    topic = parsed_args.topic
-    client_id = parsed_args.client_id
-    exclude_managed_identity_credential = parsed_args.exclude_managed_identity_credential
-    debug_azure_authentication = parsed_args.debug_azure_authentication
-    if config_file_name is not None and config_file_name!="":
-        config = read_config_file(config_file_name)
-        if app_id is None: app_id = config.get('app_id', None)
-        if pool_id is None: pool_id = config.get('pool_id', None)
-        if env_id is None: env_id = config.get('env_id', None)
-        if cluster_id is None: cluster_id = config.get('cluster_id', None)
-        if topic is None: topic = config.get('topic', None)
-        if client_id is None: client_id = config.get('client_id', None)
-        exclude_managed_identity_credential = config.get('exclude_managed_identity_credential', exclude_managed_identity_credential)
-        debug_azure_authentication = config.get('debug_azure_authentication', debug_azure_authentication)
-    if app_id is None or pool_id is None or env_id is None or cluster_id is None or topic is None:
-        print ('Please provide either a config file or all individual values as parameters')
-        exit (1)
-    auth_provider = CCloud_Auth_Provider_Azure(app_id, pool_id, exclude_managed_identity_credential=exclude_managed_identity_credential, logging_enable=debug_azure_authentication)
-    producer = CCloud_Azure_Producer(auth_provider, env_id, cluster_id, topic, client_id)
-    producer.run()
+        parser = argparse.ArgumentParser(
+            prog='ccloud_produce_to_topic',
+        )  # type: ignore  # pragma: no cover
+
+    parser.add_argument('config_file', help='A config file')
+    parser.add_argument('--env-id', '-e', required=True, help='The environment Id')
+    parser.add_argument('--cluster-id', '-k', required=True, help='The cluster Id')
+    parser.add_argument('--topic', '-t', required=True, help='The topic name')
+    parser.add_argument('--client-id', '-i', help='The client ID (defaults to the config value or hostname)')
+    try:
+        parsed_args = parser.parse_args()
+    except SystemExit:
+        parser.print_help()
+        sys.exit(1)
+
+    config = CCloud_Config(parsed_args.config_file)
+    auth_provider = CCloud_Auth_Provider_Base.create_auth(config.get_auth_config())
+    client_id = parsed_args.client_id or config.get_kafka_client_id() or None
+    producer = CCloud_Azure_Producer(
+        auth_provider,
+        parsed_args.env_id,
+        parsed_args.cluster_id,
+        parsed_args.topic,
+        client_id,
+    )
+    try:
+        producer.run()
+    except KeyboardInterrupt:
+        print('Producer interrupted by user')
+    except RuntimeError as exc:
+        print(f'An error occurred while running the producer: {exc}')

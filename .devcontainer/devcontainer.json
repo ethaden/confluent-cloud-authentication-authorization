@@ -17,7 +17,7 @@
     // Configure properties specific to VS Code.
     "vscode": {
       // Add the IDs of extensions you want installed when the container is created.
-      "extensions": ["ms-python.python", "ms-python.pylint", "ms-python.debugpy", "ms-python.black-formatter", "ms-python.vscode-pylance", "ms-python.vscode-python-envs"]
+      "extensions": ["ms-python.python", "ms-python.pylint", "ms-python.debugpy", "ms-python.black-formatter", "ms-python.vscode-pylance", "ms-python.vscode-python-envs", "GitHub.copilot-chat"]
     }
   },
   // Docker-outside-of-Docker: the Docker CLI in this container talks to Docker Desktop on the host

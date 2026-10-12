@@ -4,8 +4,8 @@ import argparse
 import requests
 from typing import Dict, Any
 
-from ccloud_util import read_config_file
-from ccloud_auth_provider_azure import CCloud_Auth_Provider_Azure, AuthenticationError
+from ccloud_config import CCloud_Config
+from ccloud_auth_provider_azure import AuthenticationError
 from ccloud_auth_provider_base import CCloud_Auth_Provider_Base
 
 # Acquire an Azure access token from the specified App Registration and the given scope configured in there
@@ -30,7 +30,7 @@ class CCloud_Azure_Cluster_Lister:
                 current_url = None
                 if response.status_code != 200:
                     error_msg = response.json().get('errors')[0].get('detail')
-                    raise Exception(f'Unable to list clusters (status code: {response.status_code}, message: "{error_msg}")')
+                    raise RuntimeError(f'Unable to list clusters (status code: {response.status_code}, message: "{error_msg}")')
                 response_json = response.json()
                 metadata = response_json.get('metadata', None)
                 if metadata is not None:
@@ -46,35 +46,35 @@ class CCloud_Azure_Cluster_Lister:
             print (f'Unable to authenticate: {str(exc)}')
             exit(1)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     if sys.version_info >= (3, 9):
-        parser = argparse.ArgumentParser(prog='ccloud_list_environments',
-            exit_on_error=False) # type: ignore  # pragma: no cover
+        parser = argparse.ArgumentParser(
+            prog='ccloud_list_clusters_of_environment',
+            exit_on_error=True,
+        )  # type: ignore  # pragma: no cover
     else:
-        parser = argparse.ArgumentParser(prog='ccloud_list_environments') # type: ignore  # pragma: no cover
-    parser.add_argument('--app-id', '-a', help='The Id of the Azure App Registration configured in the Confluent Cloud Identity Pool', default=None)
-    parser.add_argument('--pool-id', '-p', help='The Id of the Identity Pool configured in Confluent Cloud', default=None)
-    parser.add_argument('--env-id', '-e', help='The environment Id')
-    parser.add_argument('--debug-azure-authentication', '-d', help='Log debug output from Azure authentication. Default: False', action='store_true')
-    parser.add_argument('--exclude-managed-identity-credential', '-m', help='Disables using the managed identity in Azure authentication which might speed up the login on developer machines. Default: False', action='store_true')
-    parser.add_argument('--config', '-c', help='A config file', default=None)
-    parsed_args = parser.parse_args()
-    config_file_name = parsed_args.config
-    app_id = parsed_args.app_id
-    pool_id = parsed_args.pool_id
-    env_id = parsed_args.env_id
-    exclude_managed_identity_credential = parsed_args.exclude_managed_identity_credential
-    debug_azure_authentication = parsed_args.debug_azure_authentication
-    if config_file_name is not None and config_file_name!="":
-        config = read_config_file(config_file_name)
-        if app_id is None: app_id = config.get('app_id', None)
-        if pool_id is None: pool_id = config.get('pool_id', None) 
-        if env_id is None: env_id = config.get('env_id', None)
-        exclude_managed_identity_credential = config.get('exclude_managed_identity_credential', exclude_managed_identity_credential)
-        debug_azure_authentication = config.get('debug_azure_authentication', debug_azure_authentication)
-    if app_id is None or pool_id is None or env_id is None:
-        print ('Please provide either a config file or all individual values as parameters')
-        exit (1)
-    auth_provider = CCloud_Auth_Provider_Azure(app_id, pool_id, exclude_managed_identity_credential=exclude_managed_identity_credential, logging_enable=debug_azure_authentication)
-    cluster_lister = CCloud_Azure_Cluster_Lister(auth_provider, env_id)
-    cluster_lister.run()
+        parser = argparse.ArgumentParser(
+            prog='ccloud_list_clusters_of_environment',
+        )  # type: ignore  # pragma: no cover
+
+    parser.add_argument('config_file', nargs='?', help='A config file')
+    parser.add_argument('--env-id', '-e', required=True, help='The environment Id')
+    try:
+        parsed_args = parser.parse_args()
+    except SystemExit:
+        parser.print_help()
+        sys.exit(1)
+    config_file_name = parsed_args.config_file
+    if config_file_name is None or config_file_name=="":
+        print ('Please provide a config file')
+        parser.print_help()
+        sys.exit(1)
+
+    config = CCloud_Config(config_file_name)
+    auth_provider = CCloud_Auth_Provider_Base.create_auth(config.get_auth_config())
+    cluster_lister = CCloud_Azure_Cluster_Lister(auth_provider, parsed_args.env_id)
+    try:
+        cluster_lister.run()
+    except RuntimeError as exc:
+        print (f'Error occurred: {str(exc)}')
+        exit(1)

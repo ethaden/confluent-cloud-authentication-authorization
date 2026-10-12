@@ -29,7 +29,7 @@ class CCloud_Azure_Environment_Lister:
                 current_url = None
                 if response.status_code != 200:
                     error_msg = response.json().get('errors')[0].get('detail')
-                    raise Exception(f'Unable to list environments (status code: {response.status_code}, message: "{error_msg}")')
+                    raise RuntimeError(f'Unable to list environments (status code: {response.status_code}, message: "{error_msg}")')
                 response_json = response.json()
                 metadata = response_json.get('metadata', None)
                 if metadata is not None:
@@ -47,20 +47,29 @@ class CCloud_Azure_Environment_Lister:
 if __name__=='__main__':
     if sys.version_info >= (3, 9):
         parser = argparse.ArgumentParser(prog='ccloud_list_environments',
-            exit_on_error=False) # type: ignore  # pragma: no cover
+            exit_on_error=True) # type: ignore  # pragma: no cover
     else:
         parser = argparse.ArgumentParser(prog='ccloud_list_environments') # type: ignore  # pragma: no cover
     #parser.add_argument('--exclude-managed-identity-credential', '-m', help='Disables using the managed identity in Azure authentication which might speed up the login on developer machines. Default: False', action='store_true')
     #parser.add_argument('--debug-azure-authentication', '-d', help='Log debug output from Azure authentication. Default: False', action='store_true')
     parser.add_argument('config_file', help='A config file')
-    parsed_args = parser.parse_args()
+    try:
+        parsed_args = parser.parse_args()
+    except SystemExit:
+        parser.print_help()
+        sys.exit(1)
     config_file_name = parsed_args.config_file
     if config_file_name is None or config_file_name=="":
         print ('Please provide a config file')
+        parser.print_help()
         sys.exit(1)
     config = CCloud_Config(config_file_name)
     #debug_azure_authentication = config.get('debug_azure_authentication', debug_azure_authentication)
     auth_provider = CCloud_Auth_Provider_Base.create_auth(config.get_auth_config())
     #CCloud_Auth_Provider_Azure(app_id, pool_id, exclude_managed_identity_credential=exclude_managed_identity_credential, logging_enable=debug_azure_authentication)
     env_lister = CCloud_Azure_Environment_Lister(auth_provider)
-    env_lister.run()
+    try:
+        env_lister.run()
+    except RuntimeError as exc:
+        print (f'Error occurred: {str(exc)}')
+        exit(1)

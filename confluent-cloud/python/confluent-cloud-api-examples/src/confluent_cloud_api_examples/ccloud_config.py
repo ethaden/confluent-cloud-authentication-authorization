@@ -18,7 +18,6 @@ class CCloud_Config(ABC):
         super().__init__()
         self._config = self._read_config_file(config_file_name)
         self._inject_environment_variables(self._config)
-        print (self._config)
 
     def _inject_environment_variables(self, config: Dict[str, Any]):
         for key in config.keys():
