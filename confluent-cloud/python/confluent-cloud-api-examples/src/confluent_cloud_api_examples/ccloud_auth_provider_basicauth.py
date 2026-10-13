@@ -9,10 +9,10 @@ from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 from azure.core.exceptions import ClientAuthenticationError
 
-from ccloud_auth_provider_base import CCloud_Auth_Provider_Base, AuthenticationError
+from ccloud_auth_provider import CCloud_Auth_Provider, AuthenticationError
 
 
-class CCloud_Auth_Provider_BasicAuth(CCloud_Auth_Provider_Base):
+class CCloud_Auth_Provider_BasicAuth(CCloud_Auth_Provider):
 
     def __init__(self, auth_config_basicauth: Dict[str, Any]):
         self._global_api_key = None

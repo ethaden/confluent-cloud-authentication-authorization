@@ -12,7 +12,7 @@ import socket
 
 from ccloud_config import CCloud_Config
 from ccloud_auth_provider_azure import AuthenticationError
-from ccloud_auth_provider_base import CCloud_Auth_Provider_Base
+from ccloud_auth_provider import CCloud_Auth_Provider
 
 # Acquire an Azure access token from the specified App Registration and the given scope configured in there
 # Make sure that this app registration issues JWT 2.0 tokens (update its manifest!)
@@ -20,7 +20,7 @@ from ccloud_auth_provider_base import CCloud_Auth_Provider_Base
 
 class CCloud_Azure_Consumer:
 
-    def __init__(self, auth_provider: CCloud_Auth_Provider_Base, env_id: str, cluster_id: str, topic: str, client_id: str=None, consumer_group_id: str=None):
+    def __init__(self, auth_provider: CCloud_Auth_Provider, env_id: str, cluster_id: str, topic: str, client_id: str=None, consumer_group_id: str=None):
         self._auth_provider = auth_provider
         self._env_id = env_id
         self._cluster_id = cluster_id
@@ -29,58 +29,51 @@ class CCloud_Azure_Consumer:
         self._consumer_group_id = consumer_group_id
 
     def run(self):
+        cluster_data_url = f'https://api.confluent.cloud/cmk/v2/clusters/{self._cluster_id}'
+        params ={'environment': self._env_id}
+        headers_ccloud_api = self._auth_provider.get_auth_header(cluster_data_url)
+        response = requests.get(cluster_data_url, headers=headers_ccloud_api, params=params)
+        if response.status_code != 200:
+            error_msg = response.json().get('errors')[0].get('detail')
+            raise RuntimeError(f'Unable to get metadata of cluster (status code: {response.status_code}, message: "{error_msg}")')
+        cluster_metadata = response.json()
+        kafka_bootstrap_endpoint = cluster_metadata.get('spec').get('kafka_bootstrap_endpoint')
+
+        logger = logging.getLogger(__name__)
+        string_deserializer = StringDeserializer('utf_8')
+        client_config = {
+            'bootstrap.servers': kafka_bootstrap_endpoint,
+            'client.id': self._client_id or socket.gethostname(),
+            'security.protocol': 'SASL_SSL',
+            'sasl.mechanism': 'OAUTHBEARER',
+            'oauth_cb': lambda config_str: self._auth_provider.get_azure_token_with_expiry(self._cluster_id, config_str),
+            'logger': logger,
+            'key.deserializer': string_deserializer,
+            'value.deserializer': string_deserializer,
+            'group.id': self._consumer_group_id or random.randint(0, 10000000),
+            'auto.offset.reset': 'smallest'
+        }
+        consumer = DeserializingConsumer(client_config)
         try:
-            cluster_data_url = f'https://api.confluent.cloud/cmk/v2/clusters/{self._cluster_id}?environment={self._env_id}'
-            headers_ccloud_api = self._auth_provider.get_auth_header(cluster_data_url)
-            response = requests.get(cluster_data_url, headers=headers_ccloud_api)
-            if response.status_code != 200:
-                error_msg = response.json().get('errors')[0].get('detail')
-                raise Exception(f'Unable to get metadata of cluster (status code: {response.status_code}, message: "{error_msg}")')
-            cluster_metadata = response.json()
-            cluster_name = cluster_metadata.get('spec').get('display_name')
-            cluster_base_url =  cluster_metadata.get('spec').get('http_endpoint')
-            kafka_bootstrap_endpoint = cluster_metadata.get('spec').get('kafka_bootstrap_endpoint')
-            print (cluster_base_url)
-
-            logger = logging.getLogger(__name__)
-            string_deserializer = StringDeserializer('utf_8')
-            client_config = {
-                'bootstrap.servers': kafka_bootstrap_endpoint,
-                'client.id': self._client_id or socket.gethostname(),
-                'security.protocol': 'SASL_SSL',
-                'sasl.mechanism': 'OAUTHBEARER',
-                'oauth_cb': lambda config_str: self._auth_provider.get_azure_token_with_expiry(self._cluster_id, config_str),
-                'logger': logger,
-                'key.deserializer': string_deserializer,
-                'value.deserializer': string_deserializer,
-                'group.id': self._consumer_group_id or random.randint(0, 10000000),
-                'auto.offset.reset': 'smallest'
-            }
-            consumer = DeserializingConsumer(client_config)
-            try:
-                consumer.subscribe([self._topic])
-                while True:
-                    msg = consumer.poll(timeout=1.0)
-                    if msg is None:
-                        continue
-                    if msg.error():
-                        if msg.error().code() == KafkaError._PARTITION_EOF:
-                            # End of partition event
-                            logger.info('%% %s [%d] reached end at offset %d\n' %
-                                     (msg.topic(), msg.partition(), msg.offset()))
-                        else:
-                            raise KafkaExeption(msg.error())
+            consumer.subscribe([self._topic])
+            while True:
+                msg = consumer.poll(timeout=1.0)
+                if msg is None:
+                    continue
+                if msg.error():
+                    if msg.error().code() == KafkaError._PARTITION_EOF:
+                        # End of partition event
+                        logger.info('%% %s [%d] reached end at offset %d\n' %
+                                    (msg.topic(), msg.partition(), msg.offset()))
                     else:
-                        print (f'{msg.key()}: {msg.value()}')
-            except Exception as exc:
-                logger.error(f'An exception occurred: {exc}')
-            finally:
-                consumer.close()
+                        raise KafkaExeption(msg.error())
+                else:
+                    print (f'{msg.key()}: {msg.value()}')
+        except Exception as exc:
+            logger.error(f'An exception occurred: {exc}')
+        finally:
+            consumer.close()
 
-
-        except AuthenticationError as exc:
-            print (f'Unable to authenticate: {str(exc)}')
-            exit(1)
     def delivery_report(self, err, msg):
         if err is not None:
             print('Delivery failed for User record {}: {}'.format(msg.key(), err))
@@ -112,7 +105,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     config = CCloud_Config(parsed_args.config_file)
-    auth_provider = CCloud_Auth_Provider_Base.create_auth(config.get_auth_config())
+    auth_provider = CCloud_Auth_Provider.create_auth(config.get_auth_config())
     client_id = parsed_args.client_id or config.get_kafka_client_id() or None
     consumer_group_id = (
         parsed_args.consumer_group_id
@@ -129,6 +122,9 @@ if __name__ == '__main__':
     )
     try:
         consumer.run()
+    except AuthenticationError as exc:
+        print (f'Unable to authenticate: {str(exc)}')
+        exit(1)
     except KeyboardInterrupt:
         print('Consumer interrupted by user')
     except RuntimeError as exc:

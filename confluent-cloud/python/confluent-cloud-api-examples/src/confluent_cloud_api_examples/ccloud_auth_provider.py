@@ -2,7 +2,7 @@
 from abc import ABC
 from typing import Any, Dict
 
-class CCloud_Auth_Provider_Base(ABC):
+class CCloud_Auth_Provider(ABC):
     def get_bearer(self, uri: str) -> str:
         pass
 
@@ -10,7 +10,7 @@ class CCloud_Auth_Provider_Base(ABC):
         pass
 
     @staticmethod
-    def create_auth(auth_config: Dict[str, Any]) -> CCloud_Auth_Provider_Base:
+    def create_auth(auth_config: Dict[str, Any]) -> CCloud_Auth_Provider:
         if auth_config['selected'] == 'azure':
             from ccloud_auth_provider_azure import CCloud_Auth_Provider_Azure
             return CCloud_Auth_Provider_Azure(auth_config.get('azure', {}))

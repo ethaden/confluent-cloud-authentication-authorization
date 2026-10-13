@@ -12,10 +12,10 @@ from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 from azure.core.exceptions import ClientAuthenticationError
 
-from ccloud_auth_provider_base import CCloud_Auth_Provider_Base, AuthenticationError
+from ccloud_auth_provider import CCloud_Auth_Provider, AuthenticationError
 
 
-class CCloud_Auth_Provider_Azure(CCloud_Auth_Provider_Base):
+class CCloud_Auth_Provider_Azure(CCloud_Auth_Provider):
 
     #def __init__(self, app_id: str, pool_id: str, exclude_managed_identity_credential: bool=False, min_token_validity: int=30, logging_enable: bool=False):
     def __init__(self, auth_config_azure: Dict[str, Any]):
