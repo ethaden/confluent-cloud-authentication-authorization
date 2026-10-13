@@ -18,31 +18,27 @@ class CCloud_Azure_Environment_Lister:
         self._auth_provider = auth_provider
 
     def run(self):
-        try:
-            initial_url = 'https://api.confluent.cloud/org/v2/environments?page_size=10'
-            current_url = initial_url
-            # Traverse all result pages, starting with initial one
-            print ('Found the following environments:')
-            while current_url is not None:
-                headers_ccloud_api = self._auth_provider.get_auth_header(current_url)
-                response = requests.get(current_url, headers=headers_ccloud_api)
-                current_url = None
-                if response.status_code != 200:
-                    error_msg = response.json().get('errors')[0].get('detail')
-                    raise RuntimeError(f'Unable to list environments (status code: {response.status_code}, message: "{error_msg}")')
-                response_json = response.json()
-                metadata = response_json.get('metadata', None)
-                if metadata is not None:
-                    current_url = metadata.get('next', None)
-                environments = response_json['data']
-                for environment in environments:
-                    print (f'{environment["display_name"]} ({environment["id"]})')
-                # Potenially wait for seconds specified by server until sending next request
-                rate_limit_reset_secs = int(response.headers.get('Retry-After', '0'))
-                time.sleep(rate_limit_reset_secs)
-        except AuthenticationError as exc:
-            print (f'Unable to authenticate: {str(exc)}')
-            exit(1)
+        initial_url = 'https://api.confluent.cloud/org/v2/environments?page_size=10'
+        current_url = initial_url
+        # Traverse all result pages, starting with initial one
+        print ('Found the following environments:')
+        while current_url is not None:
+            headers_ccloud_api = self._auth_provider.get_auth_header(current_url)
+            response = requests.get(current_url, headers=headers_ccloud_api)
+            current_url = None
+            if response.status_code != 200:
+                error_msg = response.json().get('errors')[0].get('detail')
+                raise RuntimeError(f'Unable to list environments (status code: {response.status_code}, message: "{error_msg}")')
+            response_json = response.json()
+            metadata = response_json.get('metadata', None)
+            if metadata is not None:
+                current_url = metadata.get('next', None)
+            environments = response_json['data']
+            for environment in environments:
+                print (f'{environment["display_name"]} ({environment["id"]})')
+            # Potenially wait for seconds specified by server until sending next request
+            rate_limit_reset_secs = int(response.headers.get('Retry-After', '0'))
+            time.sleep(rate_limit_reset_secs)
 
 if __name__=='__main__':
     if sys.version_info >= (3, 9):
@@ -70,6 +66,9 @@ if __name__=='__main__':
     env_lister = CCloud_Azure_Environment_Lister(auth_provider)
     try:
         env_lister.run()
+    except AuthenticationError as exc:
+        print (f'Unable to authenticate: {str(exc)}')
+        sys.exit(1)
     except RuntimeError as exc:
         print (f'Error occurred: {str(exc)}')
-        exit(1)
+        sys.exit(1)
